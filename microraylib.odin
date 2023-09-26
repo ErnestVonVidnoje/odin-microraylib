@@ -1,4 +1,4 @@
-package omicroray
+package microraylib
 
 import "core:strings"
 import mu "vendor:microui"
