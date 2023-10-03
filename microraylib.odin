@@ -1,4 +1,4 @@
-package omicroray
+package microraylib
 
 import "core:strings"
 import mu "vendor:microui"
@@ -13,9 +13,11 @@ render :: proc(ctx: ^mu.Context) {
 		case ^mu.Command_Text:
 			{
 				font := cmd.font
+                str := strings.clone_to_cstring(cmd.str)
+                defer free(&str)
 				rl.DrawTextEx(
 					mufont_to_rlfont(font),
-					strings.clone_to_cstring(cmd.str),
+					str,
 					rl.Vector2{auto_cast cmd.pos.x, auto_cast cmd.pos.y},
 					auto_cast ctx.text_height(font),
 					auto_cast ctx.style.spacing,
@@ -110,15 +112,16 @@ handle_input :: proc(ctx: ^mu.Context, text_buffer_size: int) -> bool  {
     }
     // Text
     {
-        builder := &strings.Builder{}
-        strings.builder_init_len(builder, text_buffer_size)
+        builder := strings.Builder{}
+        strings.builder_init_len(&builder, text_buffer_size)
+        defer strings.builder_destroy(&builder)
         for i in 0..<text_buffer_size {
-            _, err := strings.write_rune(builder, rl.GetCharPressed())
+            _, err := strings.write_rune(&builder, rl.GetCharPressed())
             if err != nil {
                 return false
             }
         }
-        mu.input_text(ctx, strings.to_string(builder^))
+        mu.input_text(ctx, strings.to_string(builder))
     }
     return true
 }
@@ -126,7 +129,9 @@ handle_input :: proc(ctx: ^mu.Context, text_buffer_size: int) -> bool  {
 setup_font :: proc(ctx: ^mu.Context, font: ^rl.Font) {
     text_width :: proc(font: mu.Font, str: string) -> i32 {
         font := mufont_to_rlfont(font)
-        size := rl.MeasureTextEx(font, strings.clone_to_cstring(str), auto_cast font.baseSize, 1)
+        str := strings.clone_to_cstring(str)
+        defer free(&str)
+        size := rl.MeasureTextEx(font, str, auto_cast font.baseSize, 1)
         return auto_cast size.x
     }
 
